@@ -1,121 +1,66 @@
 console.log('registered_students.js is executing...');
 
-addEventListener('DOMContentLoaded', () => {
-    getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown();
-    getAllStudentsAndRefreshTheSelectStudentForEnrollmentDropdown();
-});
+addEventListener('DOMContentLoaded', getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown);
 
-async function getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown() {
+async function getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown()
+{
     console.log('getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown - START');
 
     const API_URL = "http://localhost:8080/classes";
 
-    try {
+    try
+    {
         const response = await fetch(API_URL);
-        console.log({ response });
+        console.log({response});
         console.log(`response.status = ${response.status}`);
         console.log(`response.statusText = ${response.statusText}`);
         console.log(`response.ok = ${response.ok}`);
 
-        if (response.ok) {
+        if (response.ok)
+        {
             const listOfClassesAsJSON = await response.json();
-            console.log({ listOfClassesAsJSON });
+            console.log({listOfClassesAsJSON});
 
             refreshTheSelectClassForEnrollmentDropdown(listOfClassesAsJSON);
-        } else {
-            // TODO: update the HTML with information that we failed to retrieve the classes
-            const divError = document.getElementById("class_error_message");
-            if (divError) {
-                divError.innerHTML = `<p class="failure">Failed to retrieve classes from the server. Status: ${response.status}</p>`;
-            }
-            console.error("Failed to fetch classes from API");
         }
-    } catch (error) {
+        else
+        {
+            // TODO: update the HTML with information that we failed to retrieve the classes
+        }
+    }
+    catch (error)
+    {
         console.error(error);
         // TODO: update the HTML with information that we failed to connect to the API to fetch the classes data
-        const divError = document.getElementById("class_error_message");
-        if (divError) {
-            divError.innerHTML = `<p class="failure">Failed to connect to the API to fetch classes. Error: ${error}</p>`;
-        }
     }
 
     console.log('getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown - END');
 }
 
-function refreshTheSelectClassForEnrollmentDropdown(listOfClassesAsJSON) {
+
+function refreshTheSelectClassForEnrollmentDropdown(listOfClassesAsJSON)
+{
     const selectClassForEnrollment = document.getElementById("selectClassForEnrollment");
 
-    // delete all existing options (i.e., children)
-    while (selectClassForEnrollment.firstChild) {
+    // delete all existing options (i.e., children) of the selectClassForEnrollment
+    while (selectClassForEnrollment.firstChild)
+    {
         selectClassForEnrollment.removeChild(selectClassForEnrollment.firstChild);
     }
 
-    const placeholderOption = document.createElement("option");
-    placeholderOption.value = "";
-    placeholderOption.text = "Select a class";
-    placeholderOption.disabled = true;
-    placeholderOption.selected = true;
-    selectClassForEnrollment.appendChild(placeholderOption);
+    const option = document.createElement("option");
+    option.value = "";
+    option.text = "Select a class";
+    option.disabled = true;
+    option.selected = true;
+    selectClassForEnrollment.appendChild(option);
 
-    for (const classAsJSON of listOfClassesAsJSON) {
+    for (const classAsJSON of listOfClassesAsJSON)
+    {
         const option = document.createElement("option");
-        option.value = classAsJSON.id;                              // value sent to server
-        option.text = classAsJSON.code + ": " + classAsJSON.title;  // user sees this
+        option.value = classAsJSON.id;                              // this is the value that will be sent to the server
+        option.text = classAsJSON.code + ": " + classAsJSON.title;  // this is the value the user chooses from the dropdown
+
         selectClassForEnrollment.appendChild(option);
-    }
-}
-
-async function getAllStudentsAndRefreshTheSelectStudentForEnrollmentDropdown() {
-    console.log('getAllStudentsAndRefreshTheSelectStudentForEnrollmentDropdown - START');
-
-    const API_URL = "http://localhost:8080/students";
-
-    try {
-        const response = await fetch(API_URL);
-        console.log({ response });
-
-        if (response.ok) {
-            const listOfStudentsAsJSON = await response.json();
-            console.log({ listOfStudentsAsJSON });
-
-            refreshTheSelectStudentForEnrollmentDropdown(listOfStudentsAsJSON);
-        } else {
-            const divError = document.getElementById("student_error_message");
-            if (divError) {
-                divError.innerHTML = `<p class="failure">Failed to retrieve students from the server. Status: ${response.status}</p>`;
-            }
-            console.error("Failed to fetch students from API");
-        }
-    } catch (error) {
-        console.error(error);
-        const divError = document.getElementById("student_error_message");
-        if (divError) {
-            divError.innerHTML = `<p class="failure">Failed to connect to the API to fetch students. Error: ${error}</p>`;
-        }
-    }
-
-    console.log('getAllStudentsAndRefreshTheSelectStudentForEnrollmentDropdown - END');
-}
-
-function refreshTheSelectStudentForEnrollmentDropdown(listOfStudentsAsJSON) {
-    const selectStudentForEnrollment = document.getElementById("selectStudentForEnrollment");
-
-    // delete all existing options
-    while (selectStudentForEnrollment.firstChild) {
-        selectStudentForEnrollment.removeChild(selectStudentForEnrollment.firstChild);
-    }
-
-    const placeholderOption = document.createElement("option");
-    placeholderOption.value = "";
-    placeholderOption.text = "Select a student";
-    placeholderOption.disabled = true;
-    placeholderOption.selected = true;
-    selectStudentForEnrollment.appendChild(placeholderOption);
-
-    for (const student of listOfStudentsAsJSON) {
-        const option = document.createElement("option");
-        option.value = student.id;   // value sent to server
-        option.text = `${student.firstName} ${student.lastName}`;  // combine firstName + lastName
-        selectStudentForEnrollment.appendChild(option);
     }
 }
