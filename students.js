@@ -105,6 +105,34 @@ async function getStudent(studentId) {
     return null;
 }
 
+async function updateStudent(studentData) {
+    const API_URL = `http://localhost:8080/students/${studentData.id}`;
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams(studentData)
+        });
+
+        console.log({ response });
+        console.log(`response.status = ${response.status}`);
+        console.log(`response.ok = ${response.ok}`);
+
+        if (response.ok) {
+            div_update_student_details.innerHTML = '<p class="success">Student updated successfully</p>';
+            await getAndDisplayAllStudents();
+        } else {
+            div_update_student_details.innerHTML = '<p class="failure">ERROR: failed to update the student</p>';
+        }
+    } catch (error) {
+        console.error(error);
+        div_update_student_details.innerHTML = `<p class="failure">ERROR: failed to update the student with id ${studentData.id}</p>`;
+    }
+}
+
 // =====================================================================================================================
 // Functions that update the HTML by manipulating the DOM
 // =====================================================================================================================
@@ -149,6 +177,7 @@ function renderStudentAsHTML(student) {
             <p><strong>Birth Date:</strong> ${student.birthDate}</p>
             
             <button onclick="handleShowStudentDetailsEvent(event)">Show Student Details</button>
+            <button onclick="handleUpdateStudentDetailsEvent(event)">Update Student Details</button>
         </div>`;
 }
 
@@ -177,4 +206,50 @@ function displayStudentDetails(studentAsJSON) {
             <p><strong>Name:</strong> ${studentAsJSON.firstName} ${studentAsJSON.lastName}</p>
             <p><strong>Birth Date:</strong> ${studentAsJSON.birthDate}</p>
         </div>`;
+}
+
+async function handleUpdateStudentDetailsEvent(event) {
+    console.log('handleUpdateStudentDetailsEvent - START');
+
+    const studentId = event.target.parentElement.getAttribute("data-id");
+    const studentAsJSON = await getStudent(studentId);
+    console.log({ studentAsJSON });
+
+    div_update_student_details.innerHTML = `
+        <form id="id_form_update_student_details">
+            <input type="hidden" name="id" value="${studentAsJSON.id}">
+
+            <label for="update_firstName">First Name</label>
+            <input type="text" name="firstName" id="update_firstName" value="${studentAsJSON.firstName}" required>
+            <br>
+
+            <label for="update_lastName">Last Name</label>
+            <input type="text" name="lastName" id="update_lastName" value="${studentAsJSON.lastName}" required>
+            <br>
+
+            <label for="update_birthDate">Birth Date</label>
+            <input type="date" name="birthDate" id="update_birthDate" value="${studentAsJSON.birthDate}" required>
+            <br>
+
+            <button type="submit">Update student details</button>
+        </form>
+    `;
+
+    const idFormUpdateStudentElement = document.getElementById("id_form_update_student_details");
+    idFormUpdateStudentElement.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(idFormUpdateStudentElement);
+        const studentData = {
+            id: formData.get("id"),
+            firstName: formData.get("firstName"),
+            lastName: formData.get("lastName"),
+            birthDate: formData.get("birthDate")
+        };
+
+        console.log({ studentData });
+        updateStudent(studentData);
+    });
+
+    console.log('handleUpdateStudentDetailsEvent - END');
 }
