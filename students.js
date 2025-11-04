@@ -2,6 +2,9 @@ console.log('students.js is executing...');
 
 // TODO: add your code here
 
+const id_form_create_new_student = document.getElementById("id_form_create_new_student");
+id_form_create_new_student.addEventListener("submit", handleCreateNewStudentEvent);
+
 const div_create_new_student = document.getElementById("create_new_student");
 const div_show_student_details = document.getElementById("show_student_details");
 const div_update_student_details = document.getElementById("update_student_details");
@@ -15,6 +18,37 @@ const div_list_of_students = document.getElementById("list_of_students");
 // =====================================================================================================================
 // Functions that interact with the API
 // =====================================================================================================================
+
+async function createNewStudent(studentData) {
+    const API_URL = "http://localhost:8080/students";
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams(studentData)
+        });
+
+        console.log({ response });
+        console.log(`response.status = ${response.status}`);
+        console.log(`response.ok = ${response.ok}`);
+
+        if (response.ok) {
+            const createdStudent = await response.json();
+            div_create_new_student.innerHTML = `<p class="success">Student created successfully. The new student id is ${createdStudent.id}</p>`;
+
+            // Refresh the student list
+            await getAndDisplayAllStudents();
+        } else {
+            div_create_new_student.innerHTML = `<p class="failure">ERROR: failed to create the new student</p>`;
+        }
+    } catch (error) {
+        console.error(error);
+        div_create_new_student.innerHTML = `<p class="failure">ERROR: failed to connect to the API to create the new student</p>`;
+    }
+}
 
 async function getAndDisplayAllStudents() {
     console.log("getAndDisplayAllStudents - START");
@@ -74,6 +108,24 @@ async function getStudent(studentId) {
 // =====================================================================================================================
 // Functions that update the HTML by manipulating the DOM
 // =====================================================================================================================
+
+async function handleCreateNewStudentEvent(event) {
+    // Prevent the default form submission
+    event.preventDefault();
+
+    // Get form data
+    const formData = new FormData(id_form_create_new_student);
+    const studentData = {
+        firstName: formData.get("firstName"),
+        lastName: formData.get("lastName"),
+        birthDate: formData.get("birthDate")
+    };
+
+    console.log({ studentData });
+
+    // Call the function to create a new student
+    await createNewStudent(studentData);
+}
 
 function displayStudents(studentsList) {
     div_list_of_students.innerHTML = "";
