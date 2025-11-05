@@ -70,7 +70,6 @@ async function getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown()
         }
         else
         {
-            // TODO: update the HTML with information that we failed to retrieve the classes
             const selectClassForEnrollment = document.getElementById("selectClassForEnrollment");
             selectClassForEnrollment.innerHTML = "<option disabled selected>Failed to load classes</option>";
         }
@@ -78,7 +77,6 @@ async function getAllClassesAndRefreshTheSelectClassForEnrollmentDropdown()
     catch (error)
     {
         console.error(error);
-        // TODO: update the HTML with information that we failed to connect to the API to fetch the classes data
         const selectClassForEnrollment = document.getElementById("selectClassForEnrollment");
         selectClassForEnrollment.innerHTML = "<option disabled selected>Error connecting to API</option>";
     }
@@ -122,7 +120,6 @@ function refreshTheSelectClassForEnrollmentDropdown(listOfClassesAsJSON)
 {
     const selectClassForEnrollment = document.getElementById("selectClassForEnrollment");
 
-    // delete all existing options (i.e., children) of the selectClassForEnrollment
     while (selectClassForEnrollment.firstChild)
     {
         selectClassForEnrollment.removeChild(selectClassForEnrollment.firstChild);
@@ -138,8 +135,8 @@ function refreshTheSelectClassForEnrollmentDropdown(listOfClassesAsJSON)
     for (const classAsJSON of listOfClassesAsJSON)
     {
         const option = document.createElement("option");
-        option.value = classAsJSON.id;                              // this is the value that will be sent to the server
-        option.text = classAsJSON.code + ": " + classAsJSON.title;  // this is the value the user chooses from the dropdown
+        option.value = classAsJSON.id;
+        option.text = classAsJSON.code + ": " + classAsJSON.title;
 
         selectClassForEnrollment.appendChild(option);
     }
@@ -149,7 +146,6 @@ function refreshTheSelectStudentForEnrollmentDropdown(listOfStudents)
 {
     const selectStudentForEnrollment = document.getElementById("selectStudentForEnrollment");
 
-    // delete all existing options (i.e., children) of the selectStudentForEnrollment
     while (selectStudentForEnrollment.firstChild)
     {
         selectStudentForEnrollment.removeChild(selectStudentForEnrollment.firstChild);
@@ -165,8 +161,8 @@ function refreshTheSelectStudentForEnrollmentDropdown(listOfStudents)
     for (const student of listOfStudents)
     {
         const option = document.createElement("option");
-        option.value = student.id;                              // this is the value that will be sent to the server
-        option.text = student.firstName + " " + student.lastName;  // this is the value the user chooses from the dropdown
+        option.value = student.id;
+        option.text = student.firstName + " " + student.lastName;
 
         selectStudentForEnrollment.appendChild(option);
     }
@@ -196,6 +192,64 @@ async function getAndDisplayAllRegisteredStudents() {
     console.log("getAndDisplayAllRegisteredStudents - END");
 }
 
+async function dropStudentFromClass(studentId, classCode) {
+    let classId;
+    try {
+        const classesResponse = await fetch("http://localhost:8080/classes");
+        if (classesResponse.ok) {
+            const classesList = await classesResponse.json();
+            const classObj = classesList.find(c => c.code === classCode);
+            if (!classObj) {
+                alert(`Error: class with code ${classCode} not found`);
+                return;
+            }
+            classId = classObj.id;
+        } else {
+            alert("Failed to fetch classes from server.");
+            return;
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Failed to connect to server to get class information.");
+        return;
+    }
+
+    const API_URL = "http://localhost:8080/drop_student_from_class";
+    const params = new URLSearchParams();
+    params.append("studentId", studentId);
+    params.append("classId", classId);
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+        });
+
+        console.log({ response });
+        console.log(`response.status = ${response.status}`);
+        console.log(`response.ok = ${response.ok}`);
+
+        const divRegisteredStudents = document.getElementById("list_of_registered_students");
+
+        if (response.status === 204) {
+            divRegisteredStudents.innerHTML = `<p class="success">Student with ID ${studentId} successfully dropped from class ${classCode}</p>`;
+            await getAndDisplayAllRegisteredStudents();
+        } else {
+            const errorResult = await response.json();
+            divRegisteredStudents.innerHTML = `<p class="failure">ERROR: ${errorResult.error}</p>`;
+        }
+    } catch (error) {
+        console.error(error);
+        const divRegisteredStudents = document.getElementById("list_of_registered_students");
+        divRegisteredStudents.innerHTML = `<p class="failure">ERROR: Failed to connect to the API to drop student from class</p>`;
+    }
+}
+
+// =====================================================================================================================
+// Add a "Drop" button for each registered student entry
+// =====================================================================================================================
+
 async function displayRegisteredStudents(list) {
     const divRegisteredStudents = document.getElementById("list_of_registered_students");
     divRegisteredStudents.innerHTML = "";
@@ -216,8 +270,6 @@ async function displayRegisteredStudents(list) {
                 const studentData = await studentResponse.json();
                 firstName = studentData.firstName;
                 lastName = studentData.lastName;
-            } else {
-                console.warn(`Failed to fetch student with ID ${entry.studentId}`);
             }
         } catch (err) {
             console.error(`Error fetching student ${entry.studentId}:`, err);
@@ -230,9 +282,20 @@ async function displayRegisteredStudents(list) {
             <p><strong>Student ID:</strong> ${entry.studentId}</p>
             <p><strong>Student Name:</strong> ${firstName} ${lastName}</p>
             <p><strong>Class:</strong> ${entry.code} - ${entry.title}</p>
+            <button class="btnDropStudent" data-student-id="${entry.studentId}" data-class-code="${entry.code}">Drop Student from Class</button>
             ${i < list.length - 1 ? '<hr>' : ''}
         `;
 
         divRegisteredStudents.appendChild(div);
     }
+
+    const dropButtons = document.querySelectorAll(".btnDropStudent");
+    dropButtons.forEach(btn => {
+        btn.addEventListener("click", async (event) => {
+            const studentId = event.target.getAttribute("data-student-id");
+            const classCode = event.target.getAttribute("data-class-code");
+
+            await dropStudentFromClass(studentId, classCode);
+        });
+    });
 }
