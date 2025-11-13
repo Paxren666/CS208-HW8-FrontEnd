@@ -246,6 +246,89 @@ async function dropStudentFromClass(studentId, classCode) {
     }
 }
 
+// ===============================
+// Show Grades Feature
+// ===============================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Populate the "Show Grades" student dropdown
+    getAllStudentsAndRefreshTheGradesDropdown();
+
+    // Set up button click to fetch and display grades
+    const btnLoadGrades = document.getElementById("btnLoadGrades");
+    btnLoadGrades.addEventListener("click", async () => {
+        const studentId = document.getElementById("selectStudentForGrades").value;
+        if (!studentId) {
+            alert("Please select a student first.");
+            return;
+        }
+
+        await fetchAndDisplayStudentGrades(studentId);
+    });
+});
+
+async function getAllStudentsAndRefreshTheGradesDropdown() {
+    const API_URL = "http://localhost:8080/students";
+    const select = document.getElementById("selectStudentForGrades");
+
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("Failed to fetch students");
+
+        const students = await response.json();
+
+        // Clear existing options
+        select.innerHTML = "<option value='' disabled selected>Select a student</option>";
+
+        students.forEach(student => {
+            const option = document.createElement("option");
+            option.value = student.id;
+            option.text = student.firstName + " " + student.lastName;
+            select.appendChild(option);
+        });
+    } catch (err) {
+        console.error(err);
+        select.innerHTML = "<option disabled selected>Error loading students</option>";
+    }
+}
+
+async function fetchAndDisplayStudentGrades(studentId) {
+    const API_URL = `http://localhost:8080/student_grades/${studentId}`;
+    const div = document.getElementById("student_grades_result");
+    div.innerHTML = "Loading grades...";
+
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+            if (response.status === 404) {
+                div.innerHTML = "<p>No grades found for this student.</p>";
+            } else {
+                div.innerHTML = "<p>Failed to fetch grades.</p>";
+            }
+            return;
+        }
+
+        const grades = await response.json();
+
+        if (grades.length === 0) {
+            div.innerHTML = "<p>No grades found for this student.</p>";
+            return;
+        }
+
+        // Build a simple table
+        let html = "<table border='1'><tr><th>Class Code</th><th>Class Title</th><th>Grade</th></tr>";
+        grades.forEach(g => {
+            html += `<tr><td>${g.code}</td><td>${g.title}</td><td>${g.grade}</td></tr>`;
+        });
+        html += "</table>";
+
+        div.innerHTML = html;
+    } catch (err) {
+        console.error(err);
+        div.innerHTML = "<p>Error connecting to API.</p>";
+    }
+}
+
 // =====================================================================================================================
 // Add a "Drop" button for each registered student entry
 // =====================================================================================================================
